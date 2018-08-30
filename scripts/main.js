@@ -1,12 +1,15 @@
 function command(userCom) {
+
 	userCom = userCom.toLowerCase(); //to lower case
 	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
 	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-	var firstWord = userCom.replace(/ .*/,'');
-	console.log("command: "+ userCom + "," + " first word: " + firstWord); //for testing purposes
-
+    var splitCommands = [];
+    splitCommands = splitCommandToWords(userCom);
+    
+    console.log("command: "+ splitCommands + "," + " first word: " + splitCommands[0]); //for testing purposes
+    
 	//command parsing
-	switch(firstWord) {
+	switch(splitCommands[0]) {
 		case "help":
 			newMessage('"l" or "look": Look around<br>"x ___" or "examine ___": Examine an object<br>"take ___": Take an object');
 			break;
@@ -18,7 +21,39 @@ function command(userCom) {
 
 		case "x":
 		case "examine":
-			break;
+            if (splitCommands[1]) {
+                switch(splitCommands[1]) {
+                    case "room":
+                        newMessage(room.describeVerbose());
+                        break;
+                    case "self":
+                    case "yourself":
+                    case "you":
+                    case "me":
+                    case "myself":
+                        newMessage("Hey look it's you.");
+                        break; 
+                    default:
+                        //go through all things in the room and return .describeVerbose() if it's there.
+                        for (var i = 0; i < room.inanimates.length; i++) {
+                            if (room.inanimates[i].name == splitCommands[1]) {
+                                newMessage(room.inanimates[i].describeVerbose());
+                                return;
+                            };
+                        for (var i = 0; i < room.contains.length; i++) {
+                            if (room.contains[i].name == splitCommands[1]) {
+                                newMessage(room.contains[i].describeVerbose());
+                                return;
+                            };
+                        };
+                        newMessage("No such thing exists.");   
+                        };
+                };
+            }
+            else {
+                newMessage("Please specify something to examine.");
+			    break;
+            };
 
 		case "take":
 			break;
@@ -61,6 +96,10 @@ function addArticle(string) {
 	return "a " + string;
 }
 
+function splitCommandToWords(command) {
+    return command.split(/\s+/);
+};
+
 //actions
 
 //Object Mixins
@@ -71,34 +110,39 @@ let smallMixin = function(obj) {
 
 let containerMixin = function(obj) {
 	
-}
+};
 
 //objects
 function roomObj() {
-	var contains = [];
-	var inanimates = [];
+	this.contains = [];
+	this.inanimates = [];
 
-	this.addPerson = function(personObj) {contains.push(personObj);}
-	this.addObject = function(obj) {inanimates.push(obj);}
+	this.addPerson = function(personObj) {this.contains.push(personObj);}
+	this.addObject = function(obj) {this.inanimates.push(obj);}
+    this.describeVerbose = function() {
+        return "Four walls, a floor and a ceiling. Yep it's a room all right.";
+    };
 	this.describe = function() {
-		return this.describeSelf() + " " + this.describeInanimates();
+		return this.describeSelf() + " " + this.describeInanimates() + " " + this.describePeople();
 	};
 	this.describeSelf = function() {
 		return "You are in a room.";
 	};
 	this.describeInanimates = function() {
+        //describes all important inanimate things
+        //TODO: filter out only important things. Make a temporary array of all important things and then constructing the string.
 		var outString = "";
-		if (inanimates.length == 0) {
+		if (this.inanimates.length == 0) {
 			outString = "There is nothing in the room.";
 		}
-		else if (inanimates.length == 1) {
-			outString = addArticle(inanimates[0].name) + " is in the room.";
+		else if (this.inanimates.length == 1) {
+			outString = addArticle(this.inanimates[0].name) + " is in the room.";
 		}
 		else {
-			for (var i = 0; i < inanimates.length-1; i++) {
-				outString +=addArticle(inanimates[i].name) + ", ";
+			for (var i = 0; i < this.inanimates.length-1; i++) {
+				outString +=addArticle(this.inanimates[i].name) + ", ";
 			};
-			outString += "and " + addArticle(inanimates[i].name) + " ";
+			outString += "and " + addArticle(this.inanimates[i].name) + " ";
 			outString += "are in the room.";
 		};
 		return capitalizeFirstLetter(outString);
@@ -106,19 +150,19 @@ function roomObj() {
 
 	this.describePeople = function() {
 		var outString = "";
-		if (contains.length == 0) {
+		if (this.contains.length == 0) {
 			outString = "Nobody is in the room.";
 		}
-		else if (contains.length == 1) {
-			outString = contains[0].name + " is in the room.";
+		else if (this.contains.length == 1) {
+			outString = this.contains[0].name + " are in the room.";
 		}
 		else {
-			for (var i = 0; i < contains.length; i++) {
-				outString += contains[i].name + " ";
+			for (var i = 0; i < this.contains.length; i++) {
+				outString += this.contains[i].name + " ";
 			};
 			outString += "are in the room.";
 		};
-		return outString
+		return capitalizeFirstLetter(outString);
 	};
 };
 
@@ -129,43 +173,74 @@ function user() {
 	};
 };
 
-function person(name) {
+function personObj(name, userId) {
+    this.id = userId;
 	this.name = name;
+    this.contains = [];
+    
 	this.sayStuff = function() {console.log("stuff");}
+    this.describeVerbose = function() {
+        var outString = "";
+        if (this.id == userId) {
+            outString = "Hey look it's you.";
+        }
+        else {
+            outString = "It's " + this.name;
+        };
+        return outString;
+        
+    };
+        
 };
 
 function lampObj() {
 	var contains = [];
 
 	this.name = "lamp";
-	this.describeVerbose = "A small lamp. Its light illuminates the room."
+	this.describeVerbose = function () {
+        return "A small lamp. Its light illuminates the room."
+    };
 };
 
+function wallObj() {
+    var contains = [];
+    this.name = "wall";
+    this.describeVerbose = function() {
+        return "An unadorned wall."
+    };
+};
+    
+function ceilObj() {
+    var contains = [];
+    this.name = "ceiling";
+    this.describeVerbose = function() {
+        return "An unadorned wall."
+    };
+};
+    
 function filterObj(name, color) {
 	this.color = color;
 	this.name = name;
 };
 
+function makeUserId() {
+    //make a random UUID for user session
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+
+var sessionId = makeUserId();
+console.log(sessionId);
+
+var person = new personObj('You', sessionId);
 
 
 var room = new roomObj();
 lamp = new lampObj();
+wall = new wallObj();
+
 room.addObject(lamp);
 
-lamp2 = new lampObj();
-room.addObject(lamp2);
-
-lamp3 = new lampObj();
-room.addObject(lamp3);
+room.addPerson(person);
 
 newMessage(room.describe());
-
-/*
-var room_1 = new room();
-var person_1 = new person("Joey");
-var person_2 = new person("Frank");
-
-room_1.addPerson(person_1);
-room_1.addPerson(person_2);
-console.log(room_1.describe());
-*/
