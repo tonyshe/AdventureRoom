@@ -1,4 +1,25 @@
 function command(userCom) {
+	userCom = userCom.toLowerCase(); //to lower case
+	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
+	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+	console.log(userCom); //for testing purposes
+
+	//command parsing
+	switch(userCom) {
+		case "l":
+		case "look":
+			newMessage(room.describe());
+			break;
+		case "shit":
+		case "fuck":
+			newMessage("No need to be rude!");
+			break;
+		default:
+			newMessage("That is not a command I recognize.");
+	};
+
+
+	/*
 	var com = document.getElementById("command");
 	var messages = document.getElementById("messageBox");
 	var newDiv = document.createElement('div');
@@ -11,7 +32,8 @@ function command(userCom) {
 	messageText = document.createElement('p');
 	messageText.innerHTML = userCom;
 	newDiv.appendChild(messageText);
-}
+	*/
+};
 
 function newMessage(msg) {
 	var messages = document.getElementById("messageBox");
@@ -27,19 +49,50 @@ function newMessage(msg) {
 	newDiv.appendChild(messageText);
 }
 
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 //actions
-function look() {
 
+//Object Mixins
+let smallMixin = function(obj) {
+	obj.pickup = function() {
+
+	};
 };
-
 //objects
 function roomObj() {
 	var contains = [];
+	var inanimates = [];
+
 	this.addPerson = function(personObj) {contains.push(personObj);}
+	this.addObject = function(obj) {inanimates.push(obj);}
+	this.describe = function() {
+		return this.describeSelf() + " " + this.describeInanimates();
+	};
 	this.describeSelf = function() {
 		return "You are in a room.";
 	};
-	this.describe = function() {
+	this.describeInanimates = function() {
+		var outString = "";
+		if (inanimates.length == 0) {
+			outString = "There is nothing in the room.";
+		}
+		else if (inanimates.length == 1) {
+			outString = inanimates[0].describeSimple + " is in the room.";
+		}
+		else {
+			for (var i = 0; i < inanimates.length-1; i++) {
+				outString += inanimates[i].describeSimple + ", ";
+			};
+			outString += "and " + inanimates[i].describeSimple + " ";
+			outString += "are in the room.";
+		};
+		return capitalizeFirstLetter(outString);
+	};
+
+	this.describePeople = function() {
 		var outString = "";
 		if (contains.length == 0) {
 			outString = "Nobody is in the room.";
@@ -62,13 +115,16 @@ function person(name) {
 	this.sayStuff = function() {console.log("stuff");}
 };
 
-function chair() {
-	this.describe = "A wooden chair";
+function lampObj() {
+	this.describeSimple = "a lamp";
+	this.name = "lamp";
 }
 
 var room = new roomObj();
-newMessage(room.describeSelf());
+lamp = new lampObj();
+room.addObject(lamp);
 
+newMessage(room.describe());
 
 /*
 var room_1 = new room();
