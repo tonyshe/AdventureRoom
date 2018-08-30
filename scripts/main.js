@@ -7,6 +7,10 @@ function command(userCom) {
 
 	//command parsing
 	switch(firstWord) {
+		case "help":
+			newMessage('"l" or "look": Look around<br>"x ___" or "examine ___": Examine an object<br>"take ___": Take an object');
+			break;
+
 		case "l":
 		case "look":
 			newMessage(room.describe());
@@ -14,6 +18,9 @@ function command(userCom) {
 
 		case "x":
 		case "examine":
+			break;
+
+		case "take":
 			break;
 
 		case "shit":
@@ -40,8 +47,18 @@ function newMessage(msg) {
 	newDiv.appendChild(messageText);
 }
 
+//String formatting functions
 function capitalizeFirstLetter(string) {
+	//Add capital to first letter of a sentence.
     return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function addArticle(string) {
+	//adds AN to words that start with vowels, otherwise A
+	if ("aeiou".indexOf(string.charAt(0).toLowerCase()) > -1) {
+		return "an " + string;
+	}
+	return "a " + string;
 }
 
 //actions
@@ -75,13 +92,13 @@ function roomObj() {
 			outString = "There is nothing in the room.";
 		}
 		else if (inanimates.length == 1) {
-			outString = inanimates[0].describeSimple + " is in the room.";
+			outString = addArticle(inanimates[0].name) + " is in the room.";
 		}
 		else {
 			for (var i = 0; i < inanimates.length-1; i++) {
-				outString += inanimates[i].describeSimple + ", ";
+				outString +=addArticle(inanimates[i].name) + ", ";
 			};
-			outString += "and " + inanimates[i].describeSimple + " ";
+			outString += "and " + addArticle(inanimates[i].name) + " ";
 			outString += "are in the room.";
 		};
 		return capitalizeFirstLetter(outString);
@@ -120,7 +137,6 @@ function person(name) {
 function lampObj() {
 	var contains = [];
 
-	this.describeSimple = "a lamp";
 	this.name = "lamp";
 	this.describeVerbose = "A small lamp. Its light illuminates the room."
 };
@@ -135,6 +151,12 @@ function filterObj(name, color) {
 var room = new roomObj();
 lamp = new lampObj();
 room.addObject(lamp);
+
+lamp2 = new lampObj();
+room.addObject(lamp2);
+
+lamp3 = new lampObj();
+room.addObject(lamp3);
 
 newMessage(room.describe());
 
