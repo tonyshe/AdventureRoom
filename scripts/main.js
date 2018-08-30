@@ -2,37 +2,28 @@ function command(userCom) {
 	userCom = userCom.toLowerCase(); //to lower case
 	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
 	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-	console.log(userCom); //for testing purposes
+	var firstWord = userCom.replace(/ .*/,'');
+	console.log("command: "+ userCom + "," + " first word: " + firstWord); //for testing purposes
 
 	//command parsing
-	switch(userCom) {
+	switch(firstWord) {
 		case "l":
 		case "look":
 			newMessage(room.describe());
 			break;
+
+		case "x":
+		case "examine":
+			break;
+
 		case "shit":
 		case "fuck":
 			newMessage("No need to be rude!");
 			break;
+
 		default:
 			newMessage("That is not a command I recognize.");
 	};
-
-
-	/*
-	var com = document.getElementById("command");
-	var messages = document.getElementById("messageBox");
-	var newDiv = document.createElement('div');
-
-	//Create new div to append to MESSAGEBOX
-	newDiv.className = "message";
-	messages.appendChild(newDiv);
-
-	//Create new p to insert into MESSAGE
-	messageText = document.createElement('p');
-	messageText.innerHTML = userCom;
-	newDiv.appendChild(messageText);
-	*/
 };
 
 function newMessage(msg) {
@@ -58,9 +49,13 @@ function capitalizeFirstLetter(string) {
 //Object Mixins
 let smallMixin = function(obj) {
 	obj.pickup = function() {
-
 	};
 };
+
+let containerMixin = function(obj) {
+	
+}
+
 //objects
 function roomObj() {
 	var contains = [];
@@ -123,9 +118,19 @@ function person(name) {
 };
 
 function lampObj() {
+	var contains = [];
+
 	this.describeSimple = "a lamp";
 	this.name = "lamp";
-}
+	this.describeVerbose = "A small lamp. Its light illuminates the room."
+};
+
+function filterObj(name, color) {
+	this.color = color;
+	this.name = name;
+};
+
+
 
 var room = new roomObj();
 lamp = new lampObj();
