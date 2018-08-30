@@ -110,6 +110,13 @@ function roomObj() {
 	};
 };
 
+function user() {
+	var inventory = [];
+	
+	this.describe = function() {
+	};
+};
+
 function person(name) {
 	this.name = name;
 	this.sayStuff = function() {console.log("stuff");}
