@@ -21,7 +21,8 @@ function command(userCom) {
 		case "x":
 		case "examine":
             if (splitCommands[1]) {
-                switch(splitCommands[1]) {
+            	var examineObjString = userCom.substr(userCom.indexOf(" ") + 1);
+                switch(examineObjString) {
                     case "room":
                         newMessage(_room.describeVerbose());
                         break;
@@ -35,26 +36,35 @@ function command(userCom) {
                     default:
                         //go through all things in the _room and return .describeVerbose() if it's there.
                         //this is really ugly. clean up the break statements if possible
-                        var isDone = false;
+                        var examineResult = [];
                         for (var i = 0; i < _room.inanimates.length; i++) {
                         	for (var j = 0; j < _room.inanimates[i].name.length; j++) {
-                        		if (_room.inanimates[i].name[j] == splitCommands[1]) {
-                                	newMessage(_room.inanimates[i].describeVerbose());
-                                	isDone = true;
-                                	return;
+                        		if (_room.inanimates[i].name[j] == examineObjString) {
+                        			examineResult.push(_room.inanimates[i]);
+                        			break;
                             	};
                         	};
                         };
 
                         for (var i = 0; i < _room.contains.length; i++) {
-                            if (_room.contains[i].name == splitCommands[1]) {
-                                newMessage(_room.contains[i].describeVerbose());
-                                return;
+                            if (_room.contains[i].name == examineObjString) {
+                                examineResult.push(_room.inanimates[i]);
+                                break;
                             };
                         };
 
-                        newMessage("No such thing exists.");
-                        return;   
+                        if (examineResult.length == 0) {
+                        	newMessage("No such thing exists.");
+                        	break;
+                        }
+                        else if (examineResult.length == 1) {
+                        	newMessage(examineResult[0].describeVerbose());
+                        	break;
+                        }
+                        else {
+                        	newMessage('There are more than one thing by the name ' + '"' + examineObjString + '." Please specify which one you mean.');
+                        	break;
+                        };
                 };
             }
             else {
@@ -110,9 +120,7 @@ function splitCommandToWords(command) {
 //actions
 
 //Object Mixins
-let smallMixin = function(obj) {
-	obj.pickup = function() {
-	};
+var smallObject = {
 };
 
 let containerMixin = function(obj) {	
@@ -234,14 +242,19 @@ _lamp.describeVerbose = function() {
 
 var _table = new basicObject(['table','desk'], "A sturdy wooden table.", important = true)
 var _wall = new basicObject(['wall','walls'], 'Large white plaster walls.');
-var _ceiling = new basicObject(['ceiling'], "A white tiled ceiling.");
+var _ceiling = new basicObject(['ceiling'], "A bland tiled ceiling. Someone should have put more effort into decorating this place!");
 var _floor = new basicObject(['floor','ground'], "Speckled linoleum.");
+var _redFilter = new basicObject(['red filter','filter','red'], "A transparent red filter",important = true);
+var _blueFilter = new basicObject(['blue filter','filter','blue'], "A transparent blue filter",important = true);
+
 
 _room.addObject(_lamp);
 _room.addObject(_table);
 _room.addObject(_wall);
 _room.addObject(_ceiling);
 _room.addObject(_floor);
+_room.addObject(_redFilter);
+_room.addObject(_blueFilter);
 _room.addPerson(_person);
 
 newMessage(_room.describe());
