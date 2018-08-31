@@ -10,7 +10,7 @@ function command(userCom) {
 	//command parsing
 	switch(splitCommands[0]) {
 		case "help":
-			newMessage('"l" or "look": Look around<br>"x ___" or "examine ___": Examine an object');
+			newMessage('<em>"l" or "look": Look around<br>"x ___" or "examine ___": Examine something</em>');
 			break;
 
 		case "l":
@@ -59,7 +59,7 @@ function command(userCom) {
             }
             else {
                 newMessage("Please specify something to examine.");
-			    break;
+			    return;
             };
 
 		case "take":
