@@ -2,6 +2,8 @@ function command(userCom) {
 	userCom = userCom.toLowerCase(); //to lower case
 	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
 	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+	userCom = userCom.replace(" the","");
+	userCom = userCom.replace(" a","");
     var splitCommands = [];
     splitCommands = splitCommandToWords(userCom);
     
@@ -9,6 +11,7 @@ function command(userCom) {
     
 	//command parsing
 	switch(splitCommands[0]) {
+		case 'h':
 		case "help":
 			newMessage('<em>"l" or "look": Look around<br>"x ___" or "examine ___": Examine something</em>');
 			break;
@@ -21,48 +24,33 @@ function command(userCom) {
 		case "x":
 		case "examine":
             if (splitCommands[1]) {
-            	var examineObjString = userCom.substr(userCom.indexOf(" ") + 1);
-                switch(examineObjString) {
+            	var objString = userCom.substr(userCom.indexOf(" ") + 1);
+                switch(objString) {
                     case "room":
                         newMessage(_room.describeVerbose());
                         break;
+                    case "door":
+                    	newMessage('There appears to be no door in this room. That might be a little concerning.');
+                    	break;
                     case "self":
                     case "yourself":
                     case "you":
                     case "me":
                     case "myself":
                         newMessage("Hey look it's you.");
-                        break; 
+                        break;
                     default:
-                        //go through all things in the _room and return .describeVerbose() if it's there.
-                        //this is really ugly. clean up the break statements if possible
-                        var examineResult = [];
-                        for (var i = 0; i < _room.inanimates.length; i++) {
-                        	for (var j = 0; j < _room.inanimates[i].name.length; j++) {
-                        		if (_room.inanimates[i].name[j] == examineObjString) {
-                        			examineResult.push(_room.inanimates[i]);
-                        			break;
-                            	};
-                        	};
-                        };
-
-                        for (var i = 0; i < _room.contains.length; i++) {
-                            if (_room.contains[i].name == examineObjString) {
-                                examineResult.push(_room.inanimates[i]);
-                                break;
-                            };
-                        };
-
-                        if (examineResult.length == 0) {
+                    	var examineObj = findObj(objString)
+                        if (examineObj == 0) {
                         	newMessage("No such thing exists.");
                         	break;
                         }
-                        else if (examineResult.length == 1) {
-                        	newMessage(examineResult[0].describeVerbose());
+                        else if (examineObj == -1) {
+                        	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
                         	break;
                         }
                         else {
-                        	newMessage('There are more than one thing by the name ' + '"' + examineObjString + '." Please specify which one you mean.');
+                        	newMessage(examineObj.describeVerbose());
                         	break;
                         };
                 };
@@ -71,10 +59,42 @@ function command(userCom) {
                 newMessage("Please specify something to examine.");
 			    return;
             };
-
+            break;
 		case "take":
-			break;
-
+            if (splitCommands[1]) {
+            	var objString = userCom.substr(userCom.indexOf(" ") + 1);
+                switch(objString) {
+                    case "room":
+                        newMessage("I'd like to see you try that.");
+                        break;
+                    case "self":
+                    case "yourself":
+                    case "you":
+                    case "me":
+                    case "myself":
+                        newMessage("I think you technically have that already.");
+                        break;
+                    default:
+                    	var takeObj = findObj(objString)
+                        if (takeObj == 0) {
+                        	newMessage("No such thing exists.");
+                        	break;
+                        }
+                        else if (takeObj == -1) {
+                        	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+                        	break;
+                        }
+                        else {
+                        	newMessage(takeObj.describeVerbose());
+                        	break;
+                        };
+                };
+            }
+            else {
+                newMessage("Please specify something to take.");
+			    return;
+            };
+            break;
 		case "shit":
 		case "fuck":
 			newMessage("No need to be rude!");
@@ -83,6 +103,63 @@ function command(userCom) {
 		default:
 			newMessage("That is not a command I recognize.");
 	};
+};
+
+function findObjInArray(name,objArray) {
+	//finds object by name in an array of objects
+	//returns [object, index in array] if only one instance is found
+	//returns 0 if no instance is found
+	//returns -1 if multiple incidences are found
+	var findResult = [];
+    for (var i = 0; i < objArray; i++) {
+		for (var j = 0; j < objArray.name.length; j++) {
+			if (objArray[i].name[j] == name) {
+				findResult.push([objArray[i],i]);
+				break;
+			};
+		};
+	};
+	if (findResult.length == 0) {
+		return 0;
+	}
+	else if (findResult == 1) {
+		return findResult[0];
+	}
+	else {
+		return -1;
+	};
+};
+
+function findObj(name) {
+	//finds object in room by iterating through every .name array in every object in room.contains and room.inanimates
+	//returns object if found, 0 if not found, and -1 if duplicates found.
+	var examineResult = [];
+    //i-level iterates on individual objects
+    //j-level iterates on different possible names
+    for (var i = 0; i < _room.inanimates.length; i++) {
+    	for (var j = 0; j < _room.inanimates[i].name.length; j++) {
+    		if (_room.inanimates[i].name[j] == name) {
+    			examineResult.push(_room.inanimates[i]);
+    			break;
+        	};
+    	};
+    };
+    for (var i = 0; i < _room.contains.length; i++) {
+        if (_room.contains[i].name == name) {
+            examineResult.push(_room.contains[i]);
+            break;
+        };
+    };
+
+    if (examineResult.length == 0) {
+    	return 0;
+    }
+    else if (examineResult.length == 1) {
+    	return examineResult[0];
+    }
+    else {
+    	return -1;
+    };
 };
 
 function newMessage(msg) {
@@ -99,7 +176,26 @@ function newMessage(msg) {
 	newDiv.appendChild(messageText);
 }
 
-//String formatting functions
+//String functions
+function objLister(objArray) {
+	var outString = ['',''];
+	if (objArray.length == 0) {
+		return outString;
+	}
+	else if (objArray.length == 1) {
+		outString[0] += addArticle(objArray[0].name[0]);
+		outString[1] = 'is';
+	}
+	else {
+		for (var i = 0; i < objArray.length-1; i++) {
+			outString[0] +=addArticle(objArray[i].name[0]) + ", ";
+		};
+		outString[0] += "and " + addArticle(objArray[i].name[0]);
+		outString[1] = 'are';
+	}
+	return outString;
+}
+
 function capitalizeFirstLetter(string) {
 	//Add capital to first letter of a sentence.
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -119,11 +215,30 @@ function splitCommandToWords(command) {
 
 //actions
 
-//Object Mixins
-var smallObject = {
-};
-
-let containerMixin = function(obj) {	
+//Obj Mixins
+let containerMix = function(obj) 
+{
+	obj.contains = [];
+	obj.container = true;
+	obj.addObject = function(newObj) {
+		//adds object to self.contains
+		obj.contains.push(newObj);
+	}
+	obj.removeObject = function(objString) {
+		//searches self.contains for object with objString in its .names
+		//if found, removes and returns the object
+		//returns 0 if not found, -1 if duplicate
+		var searchObj = findObjInArray(objString, obj.contains);
+		if (searchObj[0] == 0) {
+			newMessage('No such thing exists');
+		}
+		else if (searchObj[0] == -1) {
+			newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+		}
+		else {
+			return obj.contains.splice(searchObj[1],1);
+		};
+	}
 };
 
 //objects
@@ -186,7 +301,7 @@ function roomObj() {
 			outString = "Nobody is in the room.";
 		}
 		else if (this.contains.length == 1) {
-			outString = this.contains[0].name + " are in the room.";
+			outString = this.contains[0].name + " are in a room.";
 		}
 		else {
 			for (var i = 0; i < this.contains.length; i++) {
@@ -215,12 +330,6 @@ function personObj(name, userId) {
         return outString;      
     };      
 };
- 
-
-function filterObj(name, color) {
-	this.color = color;
-	this.name = name;
-};
 
 function makeUserId() {
     //make a random UUID for user session
@@ -229,24 +338,37 @@ function makeUserId() {
 
 var sessionId = makeUserId();
 console.log(sessionId);
-
 var _person = new personObj('You', sessionId);
+
+//room population below
 
 var _room = new roomObj();
 var _lamp = new basicObject(['lamp','light'], 'foo', important = true);
 _lamp.color = "white";
 _lamp.describeVerbose = function() {
-	var outString = 'A small lamp. Its ' + _lamp.color + ' light illuminates the room.'
+	var outString = 'A modest floor lamp, about as tall as you.  Its ' + _lamp.color + ' light illuminates the room.'
 	return outString;
 };
 
+var _redFilter = new basicObject(['red filter','filter','red'], "A transparent red filter.");
+var _blueFilter = new basicObject(['blue filter','filter','blue'], "A transparent blue filter.");
+
 var _table = new basicObject(['table','desk'], "A sturdy wooden table.", important = true)
+containerMix(_table);
+_table.addObject(_redFilter);
+_table.addObject(_blueFilter);
+_table.describeVerbose = function() {
+	var outString = "A sturdy wooden table.";
+	var temp = objLister(this.contains);
+	if (objLister[1] != '') {
+		outString += ' ' + capitalizeFirstLetter(temp[0] + ' ' + temp[1] + ' on the table.' ); 
+	};
+	return outString;
+};
+
 var _wall = new basicObject(['wall','walls'], 'Large white plaster walls.');
 var _ceiling = new basicObject(['ceiling'], "A bland tiled ceiling. Someone should have put more effort into decorating this place!");
 var _floor = new basicObject(['floor','ground'], "Speckled linoleum.");
-var _redFilter = new basicObject(['red filter','filter','red'], "A transparent red filter",important = true);
-var _blueFilter = new basicObject(['blue filter','filter','blue'], "A transparent blue filter",important = true);
-
 
 _room.addObject(_lamp);
 _room.addObject(_table);
