@@ -1,11 +1,10 @@
 function command(userCom) {
 	userCom = userCom.toLowerCase(); //to lower case
 	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
-	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-	userCom = userCom.replace(" the","");
-	userCom = userCom.replace(" a","");
-    var splitCommands = [];
-    splitCommands = splitCommandToWords(userCom);
+	userCom = userCom.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); 	//remove punctuation
+	userCom = userCom.replace(" the ",""); 	//remove articles
+	userCom = userCom.replace(" a ",""); 	//remove articles
+    var splitCommands = splitCommandToWords(userCom); //split command to word array
     
     console.log("command: "+ splitCommands + "," + " first word: " + splitCommands[0]); //for testing purposes
     
@@ -13,16 +12,20 @@ function command(userCom) {
 	switch(splitCommands[0]) {
 		case 'h':
 		case "help":
-			newMessage('<em>"l" or "look": Look around<br>"x ___" or "examine ___": Examine something</em>');
+			newMessage('<em>"l" or "look": Look around<br>"i": Your inventory<br>"x ___" or "examine ___": Examine something<br>"take ___": Take an object</em>');
 			break;
-
+		case 'i':
+		case 'inventory':
+			if (_user.contains.length ==0) {newMessage('You have nothing.');}
+			else {newMessage('You have ' + objLister(_user.contains)[0] + '.');};
+			break;
 		case "l":
 		case "look":
 			newMessage(_room.describe());
 			break;
-
 		case "x":
 		case "examine":
+			//handles the examine x command
             if (splitCommands[1]) {
             	var objString = userCom.substr(userCom.indexOf(" ") + 1);
                 switch(objString) {
@@ -43,11 +46,9 @@ function command(userCom) {
                     	var examineObj = findObj(objString)
                         if (examineObj == 0) {
                         	newMessage("No such thing exists.");
-                        	break;
                         }
                         else if (examineObj == -1) {
                         	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
-                        	break;
                         }
                         else {
                         	newMessage(examineObj.describeVerbose());
@@ -61,6 +62,7 @@ function command(userCom) {
             };
             break;
 		case "take":
+			//handles the take x command
             if (splitCommands[1]) {
             	var objString = userCom.substr(userCom.indexOf(" ") + 1);
                 switch(objString) {
@@ -78,15 +80,23 @@ function command(userCom) {
                     	var takeObj = findObj(objString)
                         if (takeObj == 0) {
                         	newMessage("No such thing exists.");
-                        	break;
                         }
                         else if (takeObj == -1) {
                         	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
-                        	break;
                         }
                         else {
-                        	newMessage(takeObj.describeVerbose());
-                        	break;
+                        	if (takeObj.takeable) {
+                        		result = _user.addObject(takeObj);
+                        		if (result == 1) {
+                        			newMessage('You take the ' + takeObj.name[0] + '.');
+                        		}
+                        		else if (result == -1) {
+                        			newMessage('You already have that!');
+                        		};
+                        	}
+                        	else {
+                        		newMessage('You cannot take that.');
+                        	};
                         };
                 };
             }
@@ -99,9 +109,8 @@ function command(userCom) {
 		case "fuck":
 			newMessage("No need to be rude!");
 			break;
-
 		default:
-			newMessage("That is not a command I recognize.");
+			newMessage(capitalizeFirstLetter(splitCommands[0]) + " is not a command I recognize.");
 	};
 };
 
@@ -178,15 +187,21 @@ function newMessage(msg) {
 
 //String functions
 function objLister(objArray) {
+	//goes through a list of objects and returns a list
+	//first index of list is a concatenated string of "x, y... and z"
+	//second index of list is the verb is/are
 	var outString = ['',''];
 	if (objArray.length == 0) {
+		//empty list inputted
 		return outString;
 	}
 	else if (objArray.length == 1) {
+		//just one thing in list
 		outString[0] += addArticle(objArray[0].name[0]);
 		outString[1] = 'is';
 	}
 	else {
+		//2 or more
 		for (var i = 0; i < objArray.length-1; i++) {
 			outString[0] +=addArticle(objArray[i].name[0]) + ", ";
 		};
@@ -210,19 +225,44 @@ function addArticle(string) {
 }
 
 function splitCommandToWords(command) {
+	//splits a string with words into an array with individual words
     return command.split(/\s+/);
 };
 
 //actions
 
 //Obj Mixins
-let containerMix = function(obj) 
-{
+let containerMix = function(obj, allowed = []) {
+	//mixin to allow objects to contain things
 	obj.contains = [];
 	obj.container = true;
+	obj.allowed = allowed;
+
 	obj.addObject = function(newObj) {
 		//adds object to self.contains
-		obj.contains.push(newObj);
+		//if .allowed is [], then it can accept anything
+		//if .allowed is populated, then only those objects can be contained.
+		//1 if successful, 0 if not allowed, -1 if object already exists in contains
+		if (obj.contains.includes(newObj)) {
+			return -1;
+		}
+
+		if (obj.allowed.length == 0) {
+			//if .allowed is empty
+			if (newObj.belongsTo) {newObj.belongsTo.removeObject(newObj.name[0]);}; //remove object from previous container's .contains
+			newObj.belongsTo = this; //sets mew container
+			obj.contains.push(newObj);
+			return 1;
+		}
+		else {
+			//check if in .allowed
+			if (obj.allowed.includes(newObj.name[0])) {
+				obj.contains.push(newObj);
+			}
+			else {
+				return 0;
+			};
+		};
 	}
 	obj.removeObject = function(objString) {
 		//searches self.contains for object with objString in its .names
@@ -230,10 +270,10 @@ let containerMix = function(obj)
 		//returns 0 if not found, -1 if duplicate
 		var searchObj = findObjInArray(objString, obj.contains);
 		if (searchObj[0] == 0) {
-			newMessage('No such thing exists');
+			return 0;
 		}
 		else if (searchObj[0] == -1) {
-			newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+			return -1;
 		}
 		else {
 			return obj.contains.splice(searchObj[1],1);
@@ -242,15 +282,17 @@ let containerMix = function(obj)
 };
 
 //objects
-function basicObject(name, description, important = false) {
-	//Makes a basic option with 
-	//properties: name, important
+function basicObject(objInfo) {
+	//Makes a basic option with {name, description, important, takeable}
+	//properties: name, important, takeable
 	//methods: describeVerbose
-	this.name = name;
-	this.important = important;
-	this.description = description;
+	this.name = objInfo.name || "noname";
+	this.important = objInfo.important || false;
+	this.takeable = objInfo.takeable || false;
+	this.description = objInfo.description || "It's either undescribeable or I forgot to describe this object sorry";
+	this.belongsTo || null;
 	this.describeVerbose = function() {
-		return description;
+		return this.description;
 	};
 };
 
@@ -316,7 +358,6 @@ function roomObj() {
 function personObj(name, userId) {
     this.id = userId;
 	this.name = name;
-    this.contains = [];
     
 	this.sayStuff = function() {console.log("stuff");}
     this.describeVerbose = function() {
@@ -338,37 +379,42 @@ function makeUserId() {
 
 var sessionId = makeUserId();
 console.log(sessionId);
-var _person = new personObj('You', sessionId);
+var _user = new personObj('You', sessionId);
+containerMix(_user);
 
 //room population below
-
 var _room = new roomObj();
-var _lamp = new basicObject(['lamp','light'], 'foo', important = true);
+var _lamp = new basicObject({name: ['lamp', 'light', 'bulb'], description:'foo', important: true});
+containerMix(_lamp, ['red filter', 'blue filter']);
 _lamp.color = "white";
 _lamp.describeVerbose = function() {
-	var outString = 'A modest floor lamp, about as tall as you.  Its ' + _lamp.color + ' light illuminates the room.'
+	var outString = 'A small desk lamp.  Its ' + this.color + ' light illuminates the room.'
 	return outString;
 };
 
-var _redFilter = new basicObject(['red filter','filter','red'], "A transparent red filter.");
-var _blueFilter = new basicObject(['blue filter','filter','blue'], "A transparent blue filter.");
+var _redFilter = new basicObject({name: ['red filter','filter','red'], description: "A transparent red filter.", takeable: true});
+var _blueFilter = new basicObject({name: ['blue filter','filter','blue'], description: "A transparent blue filter.", takeable: true});
+var _testStuff = new basicObject({name: ['test', 'test stuff', 'stuff'], description: 'Some stuff for testing.', takeable: true});
 
-var _table = new basicObject(['table','desk'], "A sturdy wooden table.", important = true)
+var _aha = new basicObject({name: ['A-ha CD', 'me on', 'on me', 'aha','a-ha', 'cd'], description: 'A hit single by the 80s synthpop band A-ha.', takeable: true});
+
+var _table = new basicObject({name:['table','desk'], description:"A sturdy wooden table.", important: true});
 containerMix(_table);
 _table.addObject(_redFilter);
 _table.addObject(_blueFilter);
+_table.addObject(_lamp);
 _table.describeVerbose = function() {
 	var outString = "A sturdy wooden table.";
 	var temp = objLister(this.contains);
-	if (objLister[1] != '') {
+	if (temp[1] != '') {
 		outString += ' ' + capitalizeFirstLetter(temp[0] + ' ' + temp[1] + ' on the table.' ); 
 	};
 	return outString;
 };
 
-var _wall = new basicObject(['wall','walls'], 'Large white plaster walls.');
-var _ceiling = new basicObject(['ceiling'], "A bland tiled ceiling. Someone should have put more effort into decorating this place!");
-var _floor = new basicObject(['floor','ground'], "Speckled linoleum.");
+var _wall = new basicObject({name: ['wall','walls'], description:'Large white plaster walls.'});
+var _ceiling = new basicObject({name: ['ceiling'], description: "A bland tiled ceiling. Someone should have put more effort into decorating this place!"});
+var _floor = new basicObject({name: ['floor','ground'], description: "Speckled linoleum."});
 
 _room.addObject(_lamp);
 _room.addObject(_table);
@@ -377,6 +423,8 @@ _room.addObject(_ceiling);
 _room.addObject(_floor);
 _room.addObject(_redFilter);
 _room.addObject(_blueFilter);
-_room.addPerson(_person);
+_room.addObject(_testStuff);
+_room.addObject(_aha);
+_room.addPerson(_user);
 
 newMessage(_room.describe());
