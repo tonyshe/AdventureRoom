@@ -1,7 +1,7 @@
 //room population below
 var _room = new roomObj();
 var _lamp = new basicObject({name: ['lamp', 'light', 'bulb'], description:'foo', important: true});
-containerMix(_lamp, ['magenta filter', 'cyan filter','yellow filter']);
+containerMix(_lamp, {allowed: ['magenta filter', 'cyan filter','yellow filter']});
 _lamp.colorName = "white";
 _lamp.color = 9111111
 _lamp.describeVerbose = function() {
@@ -18,36 +18,26 @@ _lamp.addObject = function(newObj) {
 	//if .allowed is [], then it can accept anything
 	//if .allowed is populated, then only those objects can be contained.
 	//1 if successful, 0 if not allowed, -1 if object already exists in contains
-	if (this.contains.includes(newObj)) {
-		return -1;
-	}
-
+	if (this.contains.includes(newObj)) {return -1;}
 	if (this.allowed.includes(newObj.name[0])) {
 		if (newObj.belongsTo) {newObj.belongsTo.removeObject(newObj.name[0]);}; //remove object from previous container's .contains
 		newObj.belongsTo = this; //sets mew container
 		this.contains.push(newObj);
-			this.changeBackgroundColor(newObj.color);
+		this.changeBackgroundColor(newObj.color);
 		return 1;
 	}
-	else {
-		return 0;
-	};
+	else {return 0;};
 }
 _lamp.removeObject = function(objString) {
 	//searches self.contains for object with objString in its .names
 	//if found, removes and returns the object
 	//returns 0 if not found, -1 if duplicate
 	var searchObj = findObjInArrayByName(objString, this.contains);
-	if (searchObj[0] == 0) {
-		return 0;
-	}
-	else if (searchObj[0] == -1) {
-		return -1;
-	}
+	if (searchObj[0] == 0) {return 0;}
+	else if (searchObj[0] == -1) {return -1;}
 	else {
 		this.changeBackgroundColor(-1*searchObj[0].color);
 		return this.contains.splice(searchObj[1],1);
-
 	};
 }
 _lamp.changeBackgroundColor = function(color) {
@@ -122,6 +112,9 @@ var _ceiling = new basicObject({name: ['ceiling'], description: "A bland tiled c
 var _floor = new basicObject({name: ['floor','ground'], description: "Speckled linoleum."});
 var _door = new basicObject({name: ['door'], description: "There appears to be no door in this room. That might be a little concerning."});
 
+var _box = new basicObject({name: ['box'], description: 'Just a plain ole box.', important: true});
+containerMix(_box, {isBox: true});
+
 
 _room.addObject(_lamp);
 _room.addObject(_table);
@@ -132,8 +125,10 @@ _room.addObject(_door);
 _room.addObject(_magentaFilter);
 _room.addObject(_cyanFilter);
 _room.addObject(_yellowFilter);
+
 _room.addObject(_testStuff);
 _room.addObject(_aha);
-_room.addPerson(_user);
+_room.addObject(_box);
 
+suppressMessages = false;
 newMessage(_room.describe());

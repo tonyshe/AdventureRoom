@@ -1,3 +1,22 @@
+function newMessage(msg) {
+	if (suppressMessages != true) {
+		//Adds new div to HTML body to display messages
+		var messages = document.getElementById("messageBox");
+		var newDiv = document.createElement('div');
+
+		//Create new div to append to MESSAGEBOX
+		newDiv.className = "message";
+		messages.appendChild(newDiv);
+
+
+		//Create new p to insert into MESSAGE
+		messageText = document.createElement('p');
+		messageText.innerHTML = msg;
+		newDiv.appendChild(messageText);
+	}
+	else {return;};
+};
+
 function command(userCom) {
 	userCom = userCom.toLowerCase(); //to lower case
 	userCom = userCom.replace(/ +(?= )/g,'').trim(); //convert multiple space to one. trim whitespace
@@ -12,7 +31,7 @@ function command(userCom) {
 	switch(splitCommands[0]) {
 		case 'h':
 		case "help":
-			newMessage('<em>"l" or "look": Look around<br>"i": Your inventory<br>"x ___" or "examine ___": Examine something<br>"take ___": Take an object<br>"put ___ on ___": Put an object on something</em>');
+			newMessage('<em>"l" or "look": Look around<br>"i": Your inventory<br>"x ___" or "examine ___": Examine something<br>"take ___": Take an object<br>"put ___ on ___": Put an object on something<br>"open ___" or "close___": Open/close something</em>');
 			break;
 		case 'i':
 		case 'inventory':
@@ -103,13 +122,14 @@ function command(userCom) {
             };
             break;
         case "put":
-        	var putObj = userCom.match(/put (.*) on/); //the object being moved
-        	if (putObj == null) {newMessage('Please specify what to put that on.');}
+        	var putObj = userCom.match(/put (.*) (?:on|in)/); //the object being moved
+        	if (putObj == null) {newMessage('Please specify where to put that.');}
         	else {
         		putObj = putObj[1]
-        		var newContainerString = userCom.match(/put (.*) on (.*)/)[2]; //the object that will contain putObj
+        		var newContainerString = userCom.match(/put (.*) (?:on|in) (.*)/); //the object that will contain putObj
         		if (newContainerString == null) {newMessage('Please specify what to put that on.');}
         		else {
+        			newContainerString = newContainerString[2]
         			var findObjResult = findObjByNameInRoom(putObj);
         			var findNewContainerResult = findObjByNameInRoom(newContainerString);
         			if (typeof findObjResult == 'number') {
@@ -142,7 +162,46 @@ function command(userCom) {
         		}
         	}
         	break;
-
+        case "open":
+        	if (splitCommands[1]) {
+        		var objString = userCom.substr(userCom.indexOf(" ") + 1);
+        		var openObj = findObjByNameInRoom(objString)
+                if (openObj == 0) {
+                	newMessage("No such thing exists.");
+                }
+                else if (openObj == -1) {
+                	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+                }
+                else {
+                	openObj.open();
+                	break;
+                };
+            }
+            else {
+                newMessage("Please specify something to open.");
+			    return;
+            };
+        	break;
+        case "close":
+        	if (splitCommands[1]) {
+        		var objString = userCom.substr(userCom.indexOf(" ") + 1);
+        		var closeObj = findObjByNameInRoom(objString)
+                if (closeObj == 0) {
+                	newMessage("No such thing exists.");
+                }
+                else if (closeObj == -1) {
+                	newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+                }
+                else {
+                	closeObj.close();
+                	break;
+                };
+            }
+            else {
+                newMessage("Please specify something to close.");
+			    return;
+            };
+        	break;
 		case "shit":
 		case "fuck":
 			newMessage("No need to be rude!");
@@ -154,6 +213,44 @@ function command(userCom) {
 	}; //end switch
 };
 
+//String functions
+function objLister(objArray) {
+	//goes through a list of objects and returns a list
+	//first index of list is a concatenated string of "x, y... and z"
+	//second index of list is the verb is/are
+	var outString = ['',''];
+	if (objArray.length == 0) {
+		//empty list inputted
+		return outString;
+	}
+	else if (objArray.length == 1) {
+		//just one thing in list
+		outString[0] += addArticle(objArray[0].name[0]);
+		outString[1] = 'is';
+	}
+	else {
+		//2 or more
+		for (var i = 0; i < objArray.length-1; i++) {
+			outString[0] +=addArticle(objArray[i].name[0]) + ", ";
+		};
+		outString[0] += "and " + addArticle(objArray[i].name[0]);
+		outString[1] = 'are';
+	}
+	return outString;
+}
+
+function capitalizeFirstLetter(string) {
+	//Add capital to first letter of a sentence.
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function addArticle(string) {
+	//adds AN to words that start with vowels, otherwise A
+	if ("aeiou".indexOf(string.charAt(0).toLowerCase()) > -1) {return "an " + string;};
+	return "a " + string;
+}
+
+//Search functions
 function findObjInArrayByName(name,objArray) {
 	//finds object by name in an array of objects
 	//takes name (string), and objArray (array of objects)
@@ -200,94 +297,7 @@ function findObjByNameInRoom(name) {
     else {return -1;};
 };
 
-function newMessage(msg) {
-	var messages = document.getElementById("messageBox");
-	var newDiv = document.createElement('div');
-
-	//Create new div to append to MESSAGEBOX
-	newDiv.className = "message";
-	messages.appendChild(newDiv);
-
-
-	//Create new p to insert into MESSAGE
-	messageText = document.createElement('p');
-	messageText.innerHTML = msg;
-	newDiv.appendChild(messageText);
-}
-
-//String functions
-function objLister(objArray) {
-	//goes through a list of objects and returns a list
-	//first index of list is a concatenated string of "x, y... and z"
-	//second index of list is the verb is/are
-	var outString = ['',''];
-	if (objArray.length == 0) {
-		//empty list inputted
-		return outString;
-	}
-	else if (objArray.length == 1) {
-		//just one thing in list
-		outString[0] += addArticle(objArray[0].name[0]);
-		outString[1] = 'is';
-	}
-	else {
-		//2 or more
-		for (var i = 0; i < objArray.length-1; i++) {
-			outString[0] +=addArticle(objArray[i].name[0]) + ", ";
-		};
-		outString[0] += "and " + addArticle(objArray[i].name[0]);
-		outString[1] = 'are';
-	}
-	return outString;
-}
-
-function capitalizeFirstLetter(string) {
-	//Add capital to first letter of a sentence.
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function addArticle(string) {
-	//adds AN to words that start with vowels, otherwise A
-	if ("aeiou".indexOf(string.charAt(0).toLowerCase()) > -1) {return "an " + string;};
-	return "a " + string;
-}
-
-//actions
-
-//Object Mixins
-let containerMix = function(obj, allowed = []) {
-	//mixin to allow objects to contain things
-	obj.contains = [];
-	obj.isContainer = true;
-	obj.allowed = allowed;
-
-	obj.addObject = function(newObj) {
-		//adds object to self.contains
-		//if .allowed is [], then it can accept anything
-		//if .allowed is populated, then only those objects can be contained.
-		//1 if successful, 0 if not allowed, -1 if object already exists in contains
-		if (newObj.belongsTo == obj) {return -1;} //already exists
-		if (obj.allowed.length == 0 || obj.allowed.includes(newObj.name[0])) {
-			//if .allowed is empty
-			if (newObj.belongsTo) {newObj.belongsTo.removeObject(newObj.name[0]);}; //remove object from previous container's .contains
-			newObj.belongsTo = this; //sets mew container
-			obj.contains.push(newObj);
-			return 1;
-		}
-		else {return 0;};
-	}
-	obj.removeObject = function(objString) {
-		//searches self.contains for object with objString in its .names
-		//if found, removes and returns the object
-		//returns 0 if not found, -1 if duplicate
-		var searchObj = findObjInArrayByName(objString, obj.contains);
-		if (searchObj[0] == 0) {return 0;}
-		else if (searchObj[0] == -1) {return -1;}
-		else {return obj.contains.splice(searchObj[1],1);};
-	}
-};
-
-//objects
+//Objects
 function basicObject(objInfo) {
 	//Makes a basic option with {name, description, important, takeable}
 	//properties: name, important, takeable, belongsTo
@@ -310,48 +320,23 @@ function roomObj() {
         return "Four walls, a floor and a ceiling. Yep it's a room all right.";
     };
 	this.describe = function() {
-		return this.describePeople() + " " + this.describeInanimates();
-	};
-	this.describeSelf = function() {
-		return "You are in a room.";
+		return "You are in a room" + " " + this.describeInanimates();
 	};
 	this.describeInanimates = function() {
         //describes all important inanimate things
         //TODO: filter out only important things. Make a temporary array of all important things and then constructing the string.
         var importantObjects = [];
         for (var i=0; i < this.inanimates.length; i++) {
-        	if (this.inanimates[i].important) {importantObjects.push(this.inanimates[i].name[0]);
-        	};
+        	if (this.inanimates[i].important) {importantObjects.push(this.inanimates[i].name[0]);};
         };
 		var outString = "";
-		if (importantObjects.length == 0) {
-			outString = "There is nothing in the room.";
-		}
-		else if (importantObjects.length == 1) {
-			outString = addArticle(importantObjects[0]) + " is in the room.";
-		}
+		if (importantObjects.length == 0) {outString = "There is nothing in the room.";}
+		else if (importantObjects.length == 1) {outString = addArticle(importantObjects[0]) + " is in the room.";}
 		else {
 			for (var i = 0; i < importantObjects.length-1; i++) {
 				outString +=addArticle(importantObjects[i]) + ", ";
 			};
 			outString += "and " + addArticle(importantObjects[i]) + " ";
-			outString += "are in the room.";
-		};
-		return capitalizeFirstLetter(outString);
-	};
-
-	this.describePeople = function() {
-		var outString = "";
-		if (this.contains.length == 0) {
-			outString = "Nobody is in the room.";
-		}
-		else if (this.contains.length == 1) {
-			outString = this.contains[0].name + " are in a room.";
-		}
-		else {
-			for (var i = 0; i < this.contains.length; i++) {
-				outString += this.contains[i].name + " ";
-			};
 			outString += "are in the room.";
 		};
 		return capitalizeFirstLetter(outString);
@@ -371,11 +356,78 @@ function personObj(name, userId) {
     };      
 };
 
+//Object Mixins
+let containerMix = function(obj, containerProps = {}) {
+	//mixin to allow objects to contain things
+	obj.contains = [];
+	obj.isContainer = true;
+	obj.putIn = containerProps.putIn || false; //determines whether or not you put "on" or "in"
+	obj.isBox = containerProps.isBox || false;
+	obj.isOpen = containerProps.isOpen || true;
+	obj.isLocked = containerProps.isLocked || false;
+	obj.allowed = containerProps.allowed || [];
+	obj.describeVerbose = function() {
+		outString = obj.description;
+		if (obj.isOpen) {var openString = ' open.'}
+		else {var openString = ' closed.'}
+		return obj.description + ' It is currently ' + openString;};
+
+	obj.open = function() {;
+		if (obj.isBox == false) {newMessage("It can't do that.");}
+		else if (obj.isLocked) {newMessage("It's locked.");}
+		else if (obj.isOpen == true) {newMessage("It's already open.");}
+		else {
+			newMessage("You open the " + obj.name[0]);
+			obj.isOpen = true;
+		};
+	}
+	obj.close = function() {
+		if (obj.isBox == false) {newMessage("It can't do that.");}
+		else if (obj.isOpen == false) {newMessage("It's already closed.");}
+		else {
+			newMessage("You close the " + obj.name[0]);
+			obj.isOpen = false;
+		};
+	}
+
+	obj.lock = function() {};
+	obj.unlock = function() {};
+
+	obj.addObject = function(addObj) {
+		//adds object to self.contains
+		//if .allowed is [], then it can accept anything
+		//if .allowed is populated, then only those objects can be contained.
+		//1 if successful, 0 if not allowed, -1 if object already exists in contains
+		if (addObj.belongsTo == obj) {return -1;} //already exists
+		if (obj.allowed.length == 0 || obj.allowed.includes(addObj.name[0])) {
+			//if .allowed is empty
+			if (addObj.belongsTo) {addObj.belongsTo.removeObject(addObj.name[0]);}; //remove object from previous container's .contains
+			addObj.belongsTo = this; //sets mew container
+			obj.contains.push(addObj);
+			return 1;
+		}
+		else {return 0;};
+	}
+	obj.removeObject = function(objString) {
+		//searches self.contains for object with objString in its .names
+		//if found, removes and returns the object
+		//returns 0 if not found, -1 if duplicate
+		var searchObj = findObjInArrayByName(objString, obj.contains);
+		if (searchObj[0] == 0) {return 0;}
+		else if (searchObj[0] == -1) {return -1;}
+		else {return obj.contains.splice(searchObj[1],1);};
+	}
+};
+
+let roomMix = function() {};
+
 function makeUserId() {
     //make a random UUID for user session
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
+};
 
 var sessionId = makeUserId();
 var _user = new personObj('You', sessionId);
 containerMix(_user);
+
+let suppressMessages = true; //boolean to hide messages when necessary
