@@ -6,7 +6,7 @@ $(document).ready(function() {
     }
     else {
       e.preventDefault();
-      command($("#userCom").val());
+      _commandObj.command(($("#userCom").val()));
     };
   $(document).scrollTop($(document).height()); //scroll to bottom
   $('#command').trigger("reset"); //Resets the text box
