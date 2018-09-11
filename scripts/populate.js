@@ -1,5 +1,8 @@
 //room population below
-let _room = new basicObject({name: ['room'], description: "Four walls, a floor and a ceiling. Yep it's a room all right."}); containerMix(_room); roomMix(_room);
+let _room = new basicObject({name: ['room'], description: "Four walls, a floor and a ceiling. Yep it's a room all right."}); roomMix(_room);
+let _roomDoor = new basicObject({name: ['room'], description: "The main room."}); doorMix(_roomDoor, {room: _room});
+let _otherRoom = new basicObject({name: ['other room'], description: "Shag carpet and velvet curtains."}); containerMix(_otherRoom); roomMix(_otherRoom);
+let _otherRoomDoor = new basicObject({name: ['other room'], description: "The other room."}); doorMix(_otherRoomDoor, {room: _otherRoom});
 
 const sessionId = makeUserId();
 let _user = new personObj('You', sessionId); containerMix(_user); userMix(_user,{currentRoom: _room});
@@ -139,6 +142,9 @@ _room.addObject(_yellowFilter);
 _room.addObject(_testStuff);
 _room.addObject(_aha);
 _room.addObject(_box);
+_room.addObject(_otherRoomDoor);
+
+_otherRoom.addObject(_roomDoor);
 
 suppressMessages = false;
 newMessage(_room.look());
