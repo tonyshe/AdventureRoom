@@ -31,18 +31,29 @@ function commandObject() {
             this.commandList[splitCommands[0]](splitCommands, userCom)
         }
         else {
-            newMessage(capitalizeFirstLetter(splitCommands[0]) + " is not a command I recognize.");
+            newMessage(capitalizeFirstLetter(splitCommands[0]) + " is not a relevant command right now.");
         };
     };
 };
 let _commandObj = new commandObject(); //create the Command object
 
 let infoMix = (function(cmdObj) {
-    cmdObj.commandList['help'] = function() {newMessage('<em>"l" or "look": Look around<br>"i": Your inventory<br>"x ___" or "examine ___": Examine something<br>"take ___": Take an object<br>"put ___ on ___": Put an object on something<br>"open ___" or "close___": Open/close something</em>');}
+    cmdObj.commandList['help'] = function() {newMessage(`
+        <em>
+        "l" or "look": Look around<br>"i": Your inventory<br>
+        "x ___" or "examine ___": Examine something<br>
+        "take ___": Take an object<br>
+        "put ___ on/in ___": Put an object on/in something<br>
+        "open ___" or "close___": Open/close something<br>
+        "go ___": Go somewhere<br><br>
+
+        There are other valid commands that you can make in different situations. Feel free to play around and find them!
+        </em>
+        `);}
     cmdObj.commandList['h'] = cmdObj.commandList['help'];
     cmdObj.commandList['about'] = function() {newMessage('<em>This engine was made by Tony She. Hope you have fun!</em>')};
-    cmdObj.commandList['shit'] = function() {newMessage('No need to be rude!')};
-    cmdObj.commandList['fuck'] = cmdObj.commandList['shit'];
+    cmdObj.commandList['fuck'] = function() {newMessage('No need to be rude!')};
+    cmdObj.commandList['shit'] = function() {newMessage("This is not the appropriate place for that!!!")};
 })(_commandObj);
 
 let basicCommandMix = (function(cmdObj) {
@@ -62,9 +73,6 @@ let basicCommandMix = (function(cmdObj) {
         if (splitCommands[1]) {
                 const objString = userCom.substr(userCom.indexOf(" ") + 1);
                 switch(objString) {
-                    case "room":
-                        newMessage(_user.currentRoom.describeVerbose());
-                        break;
                     case "self":
                     case "yourself":
                     case "you":
@@ -73,6 +81,12 @@ let basicCommandMix = (function(cmdObj) {
                         newMessage("Hey look it's you.");
                         break;
                     default:
+                        for (var i=0; i<_user.currentRoom.name.length; i++) {
+                            if (objString == _user.currentRoom.name[i]) {
+                                newMessage(_user.currentRoom.describeVerbose());
+                                return;
+                            };
+                        };
                         const examineObj = findObjByNameInArray(objString, _user.currentRoom, true)
                         if (examineObj == 0) {
                             newMessage("No such thing exists.");
@@ -232,7 +246,7 @@ let basicCommandMix = (function(cmdObj) {
             var doorObj = findObjByNameInArray(objString, _user.currentRoom, true)
         };
         if (doorObj == 0) {
-            newMessage("No such place exists.");
+            newMessage("You can't go there.");
         }
         else if (doorObj == -1) {
             newMessage('There are more than one place by the name ' + '"' + objString + '." Please specify which one you mean.');
@@ -247,6 +261,35 @@ let basicCommandMix = (function(cmdObj) {
         };
     };
 })(_commandObj);
+
+let specialCommandMix = (function(cmdObj) {
+    cmdObj.commandList['eat'] = function(splitCommands, userCom) {
+        if (splitCommands[1]) {
+            var objString = userCom.substr(userCom.indexOf(" ") + 1);
+            var foodObj = findObjByNameInArray(objString, _user.currentRoom, true)
+            if (foodObj == 0) {
+                newMessage("No such thing exists.");
+            }
+            else if (foodObj == -1) {
+                newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+            }
+            else {
+                if (foodObj.objType == "food") {
+                    foodObj.consume();
+                }
+                else {
+                    newMessage('You cannot ' + splitCommands[0] + " that.")
+                };
+            };
+        }
+        else {
+            newMessage("Please specify something to " + splitCommands[0] + ".");
+            return;
+        };
+    };
+    cmdObj.commandList['drink'] = cmdObj.commandList['eat']
+})(_commandObj);
+
 
 //String functions
 function objLister(objArray) {
@@ -300,7 +343,7 @@ function findObjByNameInArray(name, containerObj, searchRecursively = false) {
     			break;
     		};
     	};
-    	if (searchRecursively && containerObj.contains[i].isContainer && containerObj.contains[i].isOpen) {
+    	if (searchRecursively && containerObj.contains[i].isContainer && containerObj.contains[i].isClosed != true) {
             const recursiveSearchResult = findObjByNameInArray(name, containerObj.contains[i], true) //Don't add 0 to array if nothing is found
             if (recursiveSearchResult != 0) {examineResult.push(recursiveSearchResult);}; //add found object or -1 (duplicate) to array
     	};
@@ -366,21 +409,35 @@ let containerMix = function(obj, containerProps = {}) {
 	obj.isContainer = true;
 	obj.putIn = containerProps.putIn || false; //determines whether or not you put "on" or "in"
 	obj.isBox = containerProps.isBox || false; //"Box" gives a container open/close functionality.
-	obj.isOpen = containerProps.isOpen || true;
+	obj.isClosed = containerProps.isClosed || false;
 	obj.isLocked = containerProps.isLocked || false;
 	obj.allowed = containerProps.allowed || []; //list of allowed objects
 	obj.describeVerbose = function() {
-		outString = obj.description;
+		var outString = obj.description;
 		if (obj.isBox) {
-			if (obj.isOpen) {
-                var openString = ' open.'
-            }
-			else {
+			if (obj.isClosed) {
                 var openString = ' closed.'
             }
-			outString + ' It is currently ' + openString;
+			else {
+                var openString = ' open.'
+            };
+			outString += ' It is currently ' + openString;
 		};
-		return outString;};
+
+        if (obj.isContainer && obj.isClosed == false) {
+            let temp = objLister(this.contains);
+            if (obj.putIn) {
+                var preposition = "in"
+            }
+            else {
+                var preposition = "on"
+            };
+            if (temp[1] != '') {
+                outString += ' ' + capitalizeFirstLetter(temp[0] + ' ' + temp[1] + ' ' + preposition + ' the ' + obj.name[0]+ '.' ); 
+            };
+        };
+        return outString;
+    };
 
 	obj.open = function() {;
 		if (obj.isBox == false) {
@@ -389,36 +446,36 @@ let containerMix = function(obj, containerProps = {}) {
 		else if (obj.isLocked) {
             newMessage("It's locked.");
         }
-		else if (obj.isOpen == true) {
+		else if (obj.isClosed == false) {
             newMessage("It's already open.");
         }
 		else {
 			newMessage("You open the " + obj.name[0]);
-			obj.isOpen = true;
+			obj.isClosed = false;
 		};
 	}
 	obj.close = function() {
 		if (obj.isBox == false) {
             newMessage("It can't do that.");
         }
-		else if (obj.isOpen == false) {
+		else if (obj.isClosed == true) {
             newMessage("It's already closed.");
         }
 		else {
 			newMessage("You close the " + obj.name[0]);
-			obj.isOpen = false;
+			obj.isClosed = true;
 		};
 	}
 
 	obj.lock = function() {};
 	obj.unlock = function() {};
 
-	obj.addObject = function(addObj) {
+	obj.addObject = function(addObj, bypass = false) {
 		//adds object to self.contains
 		//if .allowed is [], then it can accept anything
 		//if .allowed is populated, then only those objects can be contained.
 		//1 if successful, 0 if not allowed, -1 if object already exists in contains
-        if (obj.isOpen != true) {
+        if (obj.isClosed && bypass != true) {
             return -2;
         };
 		if (addObj.belongsTo == obj) { //already exists
@@ -491,20 +548,38 @@ let userMix = function(obj, userProps = {}) {
 let doorMix = function(obj, doorProps = {}) {
     obj.objType = "door";
     obj.room = doorProps.room || null;
-    obj.isOpen = doorProps.isOpen || true;
+    obj.isClosed = doorProps.isClosed || false;
     obj.isLocked = doorProps.isLocked || false;
     obj.enterMessage = doorProps.enterMessage || "You go to the " + obj.name[0] + ".";
 
     obj.goThru = function(userObj) {
-        if (obj.isOpen && obj.isLocked != true) {
+        if (obj.isClosed != true && obj.isLocked != true) {
             userObj.currentRoom = obj.room;
+            obj.room.addObject(userObj)
             newMessage(obj.enterMessage);
         }
         else if (obj.isLocked) {
             newMessage('It is locked.');
         }
-        else if (obj.isOpen != true) {
+        else if (obj.isClosed) {
             newMessage('It is closed.');
+        };
+    };
+};
+
+let foodMix = function(obj, foodProps = {}) {
+    obj.objType = "food";
+    obj.isLiquid = foodProps.isLiquid || false;
+    obj.consume = function() {
+        if (obj.isLiquid) {
+            newMessage("You drink the " + obj.name[0] + ".")
+        }
+        else {
+            newMessage("You eat the " + obj.name[0] + ".");
+        };
+        if (obj.belongsTo) {
+            obj.belongsTo.removeObject(obj.name[0]);
+            obj.belongsTo = null;
         };
     };
 };

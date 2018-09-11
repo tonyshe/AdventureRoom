@@ -1,150 +1,229 @@
 //room population below
-let _room = new basicObject({name: ['room'], description: "Four walls, a floor and a ceiling. Yep it's a room all right."}); roomMix(_room);
-let _roomDoor = new basicObject({name: ['room'], description: "The main room."}); doorMix(_roomDoor, {room: _room});
-let _otherRoom = new basicObject({name: ['other room'], description: "Shag carpet and velvet curtains."}); containerMix(_otherRoom); roomMix(_otherRoom);
-let _otherRoomDoor = new basicObject({name: ['other room'], description: "The other room."}); doorMix(_otherRoomDoor, {room: _otherRoom});
-
 const sessionId = makeUserId();
-let _user = new personObj('You', sessionId); containerMix(_user); userMix(_user,{currentRoom: _room});
 
-let _lamp = new basicObject({name: ['lamp', 'light', 'bulb'], description:'foo', important: true});
-containerMix(_lamp, {allowed: ['magenta filter', 'cyan filter','yellow filter']});
-_lamp.colorName = "white";
-_lamp.color = 9111111
-_lamp.describeVerbose = function() {
-	if (this.color != 9000000) {var outString = 'A small desk lamp.  Its ' + this.colorName + ' light illuminates the room.'}
-	else {var outString = "Only a little light is coming from it, just enough to barely light the room."};
-	let temp = objLister(this.contains);
-	if (temp[1] != '') {
-		outString += ' ' + capitalizeFirstLetter(temp[0] + ' ' + temp[1] + ' attached to the light bulb.'); 
-	};
-	return outString;
+//rooms
+let _room = new basicObject({name: ['studio', 'apartment', 'room'], description: "Hardwood floors and white painted walls. Located on the top floor of an apartment building on the corner of Howell and 12th."}); roomMix(_room);
+_room.look = function() {
+    return "Alex's main studio room. There is a bed in the corner, with a nightstand next to it. Along the wall is a brown leather couch. In the middle of the room is a coffee table and a large bean bag chair. There are a few windows on the opposite wall and a small book shelf. Around the corner is the kitchen area. To the other side is the walk-in closet and bathroom."
 };
 
-_lamp.addObject = function(addObj) {
-	//adds object to self.contains
-	//if .allowed is [], then it can accept anything
-	//if .allowed is populated, then only those objects can be contained.
-	//1 if successful, 0 if not allowed, -1 if object already exists in contains
-	if (addObj.belongsTo == this) {return -1;} //already exists
-	if (this.allowed.length == 0 || this.allowed.includes(addObj.name[0])) {
-		//if .allowed is empty or includes the object being added
-		if (addObj.belongsTo) {addObj.belongsTo.removeObject(addObj.name[0]);}; //remove object from previous container's .contains
-		addObj.belongsTo = this; //sets new container
-		this.contains.push(addObj);
-		this.changeBackgroundColor(addObj.color)
-		return 1;
-	}
-	else {return 0;};
-}
-_lamp.removeObject = function(objString) {
-	//searches self.contains for object with objString in its .names
-	//if found, removes and returns the object
-	//returns 0 if not found, -1 if duplicate
-    let searchObj = findObjByNameInArray(objString, this);
-    const searchIndex = findIndexOfObjInArray(searchObj, this);
-	if (searchObj == -1) {return -1;}
-	else {
-		this.changeBackgroundColor(-1*searchObj.color)
-        return this.contains.splice(searchIndex,1);
-    };
-}
-
-_lamp.changeBackgroundColor = function(color) {
-	this.color -= color
-	switch(this.color - 9000000) {
-		case 111111:
-			this.colorName = "white";
-			break;
-		case 111100:
-			this.colorName = "yellow";
-			break;
-		case 110011:
-			this.colorName = "magenta";
-			break;
-		case 1111:
-			this.colorName = "cyan";
-			break;
-		case 11:
-			this.colorName = "blue";
-			break;
-		case 1100:
-			this.colorName = "green";
-			break;
-		case 110000:
-			this.colorName = "red";
-			break;
-		case 0:
-			this.colorName = "black";
-			break;
-	};
-	let colorString = (this.color).toString();
-	colorString = colorString.replace(/1/g,"F");
-	colorString = colorString.replace(/9/,"#");
-	document.body.style.backgroundColor = colorString;
-	if (this.color - 9000000 == 0) {
-		document.body.style.color = "white";
-		document.getElementsByClassName('inputForm')[0].style.color = "white";
-	}
-	else {
-		document.body.style.color = "black";
-		document.getElementsByClassName('inputForm')[0].style.color = "black";
-	};
+let _kitchen = new basicObject({name: ['kitchen'], description: "A narrow kitchen area with a section that doubles as a small office."}); roomMix(_kitchen);
+_kitchen.look = function() {
+    return "You are in the kitchen. There is a fridge and stove on one side, and a sink on the other. In the office section, there is a desk and a small cabinet."
 };
 
-let _magentaFilter = new basicObject({name: ['magenta filter','filter','magenta'], description: "A transparent magenta filter.", takeable: true});
-_magentaFilter.color = 1100;
-let _cyanFilter = new basicObject({name: ['cyan filter','filter','cyan'], description: "A transparent cyan filter.", takeable: true});
-_cyanFilter.color = 110000;
-let _yellowFilter = new basicObject({name: ['yellow filter','filter','yellow'], description: "A transparent yellow filter.", takeable: true});
-_yellowFilter.color = 11;
+let _closet = new basicObject({name: ['closet', 'walk-in', 'walk in', 'walk-in closet', 'walk in closet', 'alcove'], description: "An alcove of the main area meant for clothing and storage."}); roomMix(_closet);
+_closet.look = function() {
+	return "You are in the closet alcove. A few sweaters and jackets hang on a clothesrack. Behind you is the main apartment area.";
+}
 
-let _testStuff = new basicObject({name: ['test', 'test stuff', 'stuff'], description: 'Some stuff for testing.', takeable: true});
+let _bathroom = new basicObject({name: ['bathroom', 'restroom'], description: "A small bathroom."}); roomMix(_bathroom);
+_bathroom.look = function() {
+	return "A bathtub next to a toilet and sink. Out the door is the rest of the apartment.";
+}
+
+//doors
+let _kitchenDoor = new basicObject({name: ['kitchen'], description: "The kitchen area of the studio."}); doorMix(_kitchenDoor, {room: _kitchen});
+let _kitchenToRoomDoor = new basicObject({name: ['studio', 'apartment', 'room'], description: "The main apartment area of the studio."}); doorMix(_kitchenToRoomDoor, {room: _room});
+
+let _bathroomDoor = new basicObject({name: ['bathroom', 'restroom'], description: "A door leading to the bathroom."}); doorMix(_bathroomDoor, {room: _bathroom});
+let _bathroomToRoomDoor = new basicObject({name: ['studio', 'apartment', 'room'], description: "A door leading to the apartment."}); doorMix(_bathroomToRoomDoor, {room: _room});
+
+let _closetDoor = new basicObject({name: ['closet', 'walk-in', 'walk in', 'walk-in closet', 'walk in closet', 'alcove'], description: "An alcove of the room that acts as a walk-in closet."}); doorMix(_closetDoor, {room: _closet});
+let _closetToRoomDoor = new basicObject({name: ['studio', 'apartment', 'room'], description: "The main apartment area."}); doorMix(_closetToRoomDoor, {room: _room});
+
+//door population
+_room.addObject(_kitchenDoor);
+_room.addObject(_closetDoor);
+_room.addObject(_bathroomDoor);
+
+_kitchen.addObject(_kitchenToRoomDoor);
+_closet.addObject(_closetToRoomDoor);
+_bathroom.addObject(_bathroomToRoomDoor);
+
+//studio furnishings
+let _nightstand = new basicObject({name: ['nightstand', 'night stand', 'bedstand','bed stand', 'night table', 'nighttable'], description: "A small brown table."}); containerMix(_nightstand);
+let _lamp = new basicObject({name: ['lamp', 'light'], description: "A minimalist lamp with a dimmer switch."});
+let _speaker = new basicObject({name: ['speaker', 'speakers', 'logitech'], description: "Logitech speakers with a subwoofer."})
+_nightstand.addObject(_lamp);
+_nightstand.addObject(_speaker);
+_room.addObject(_nightstand);
+
+let _bed = new basicObject({name: ['bed', 'mattress','box spring'], description: 'A queen-sized mattress and a box spring'}); containerMix(_bed);
+_room.addObject(_bed);
+
+let _couch = new basicObject({name: ['couch', 'sofa'], description: "A large brown leather couch. It's a wonder how something so big could be carried up to this apartment!"}); containerMix(_couch);
+_room.addObject(_couch);
+
+let _beanbag = new basicObject({name: ['beanbag', 'bean bag', 'bean bag chair', 'beanbag chair'], description: "An oversized bean bag chair. Its outer shell is made of soft faux velvet."}); containerMix(_beanbag);
+_room.addObject(_beanbag);
+
+let _coffeeTable = new basicObject({name: ['coffee table', 'table'], description: "A standard IKEA coffee table."}); containerMix(_coffeeTable);
+let _coaster = new basicObject({name: ['coaster'], description: "A rubber square coaster.", takeable: true});
+_coffeeTable.addObject(_coaster);
+_room.addObject(_coffeeTable);
+
+let _bookshelf = new basicObject({name: ['bookshelf', 'shelf', 'book shelf', 'shelves'], description: "A small neat piece of furniture."}); containerMix(_bookshelf, {putIn: false});
+let _book = new basicObject({name: ['book', "blowjobs"], description: "A hardback edition of <em>Blowjobs: An Oral History</em>.", takeable: true})
+_book.isBook = true
+let readMix = (function(cmdObj) {
+	cmdObj.commandList['read'] = function(splitCommands, userCom) {
+	    if (splitCommands[1]) {
+		    const objString = userCom.substr(userCom.indexOf(" ") + 1);
+		    switch(objString) {
+		        default:
+		            let searchObj = findObjByNameInArray(objString, _user.currentRoom, true)
+		            if (searchObj == 0) {
+		                newMessage("No such thing exists.");
+		            }
+		            else if (searchObj == -1) {
+		                newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+		            }
+		            else {
+		                if (searchObj.isBook) {
+		                	newMessage("It's probably best not to describe it here. The narrative is very thorough.")
+		                }
+		                else {
+		                    newMessage('You cannot read that.');
+		                };
+		            };
+		    };
+		}
+		else {
+		    newMessage("Please specify something to play.");
+		    return;
+		};
+	};
+})(_commandObj);
+
+let _ukulele = new basicObject({name: ['ukulele', 'uke'], description: "Mahogany with white trim.", takeable: true})
+_ukulele.playable = true
+_bookshelf.addObject(_book);
+_bookshelf.addObject(_ukulele);
+_room.addObject(_bookshelf);
+
 let _aha = new basicObject({name: ['A-ha CD', 'me on', 'on me', 'aha','a-ha', 'cd'], description: 'A hit single by the 80s synthpop band A-ha.', takeable: true});
-
-let _table = new basicObject({name:['table','desk'], description:"A sturdy wooden table.", important: true});
-containerMix(_table);
-
-_table.addObject(_magentaFilter);
-_table.addObject(_cyanFilter);
-_table.addObject(_yellowFilter);
-_table.addObject(_lamp);
-_table.describeVerbose = function() {
-	let outString = "A sturdy wooden table.";
-	let temp = objLister(this.contains);
-	if (temp[1] != '') {
-		outString += ' ' + capitalizeFirstLetter(temp[0] + ' ' + temp[1] + ' on the table.' ); 
-	};
-	return outString;
-};
-
-let _wall = new basicObject({name: ['wall','walls'], description:'Large white plaster walls.'});
-let _ceiling = new basicObject({name: ['ceiling'], description: "A bland tiled ceiling. Someone should have put more effort into decorating this place!"});
-let _floor = new basicObject({name: ['floor','ground'], description: "Speckled linoleum."});
-let _door = new basicObject({name: ['door'], description: "There appears to be no door in this room. That might be a little concerning."});
-
-let _box = new basicObject({name: ['box'], description: 'Just a plain ole box.', important: true});
-containerMix(_box, {isBox: true});
-let _dupeTest = new basicObject({name: ['cyan'], description: "You've been duped!"});
-
-_room.addObject(_table);
-_room.addObject(_wall);
-_room.addObject(_ceiling);
-_room.addObject(_floor);
-_room.addObject(_door);
-_room.addObject(_user);
-/*
-_room.addObject(_magentaFilter);
-_room.addObject(_cyanFilter);
-_room.addObject(_yellowFilter);
-*/
-
-_room.addObject(_testStuff);
 _room.addObject(_aha);
-_room.addObject(_box);
-_room.addObject(_otherRoomDoor);
 
-_otherRoom.addObject(_roomDoor);
+let _window = new basicObject({name: ['window', 'windows'], description: "North-facing windows. You can see a glimpse of Cal Anderson park."}); containerMix(_window, {isBox: true, allowed: ['nothing_at_all']});
+_room.addObject(_window);
+
+let playMix = (function(cmdObj) {
+	cmdObj.commandList['play'] = function(splitCommands, userCom) {
+	    if (splitCommands[1]) {
+		    const objString = userCom.substr(userCom.indexOf(" ") + 1);
+		    switch(objString) {
+		        case "self":
+		        case "yourself":
+		        case "you":
+		        case "me":
+		        case "myself":
+		            newMessage("DJ Khaled smiles far off in the distance.");
+		            break;
+		        default:
+		            let playObj = findObjByNameInArray(objString, _user.currentRoom, true)
+		            if (playObj == 0) {
+		                newMessage("No such thing exists.");
+		            }
+		            else if (playObj == -1) {
+		                newMessage('There are more than one thing by the name ' + '"' + objString + '." Please specify which one you mean.');
+		            }
+		            else {
+		                if (playObj.playable) {
+		                	newMessage("You play your favorite song on the " + playObj.name[0] + ".")
+		                }
+		                else {
+		                    newMessage('You cannot play that.');
+		                };
+		            };
+		    };
+		}
+		else {
+		    newMessage("Please specify something to play.");
+		    return;
+		};
+	};
+})(_commandObj);
+
+//kitchen furnishings
+let _desk = new basicObject({name: ['desk', 'table'], description: "A large office desk that fits flush with the wall."}); containerMix(_desk);
+let _plant = new basicObject({name: ['plant', 'bamboo', 'bamboo plant'], description: 'A few shoots of bamboo in a glass of water.', takeable: true});
+_desk.addObject(_plant);
+_kitchen.addObject(_desk);
+
+let _cabinet = new basicObject({name: ['cabinet', 'shelf', 'small shelf', 'shelves'], description: "A few shelves of dishware."}); containerMix(_cabinet, {putIn: true});
+let _mug = new basicObject({name: ['mug', 'cup'], description: 'Novelty gag mug. It says <em>Peas on Earth, and Gouda wheel to all men!</em> Ugh.', takeable: true});
+_cabinet.addObject(_mug);
+_kitchen.addObject(_cabinet);
+
+let _fridge = new basicObject({name: ['refrigerator', 'fridge'], description: "A plain white fridge."}); containerMix(_fridge, {isClosed: true, isBox: true, putIn: true})
+let _gin = new basicObject({name: ['bottle of gin', 'bottle', 'gin'], description: "A bottle of locally distilled gin. There's only a little bit left.", takeable: true}); foodMix(_gin, {isLiquid: true});
+_gin.consume = function() {
+    if (this.isLiquid) {
+        newMessage("You drink the last drops from the " + this.name[0] + ". A little warmth fills your belly.")
+    }
+    else {
+        newMessage("You eat the " + this.name[0] + ".");
+    };
+    this.objType = "basic";
+    this.description = "An empty bottle."
+    this.name = ['bottle', 'empty bottle']
+};
+_fridge.addObject(_gin,true);
+_kitchen.addObject(_fridge);
+
+let _sink = new basicObject({name: ['sink'], description: "A robust metal sink."}); containerMix(_sink, {putIn: true})
+_kitchen.addObject(_sink);
+
+let _stove = new basicObject({name: ['stove', 'range'], description: "A simple stove with four burners."}); containerMix(_stove)
+let _burner = new basicObject({name: ['burner', 'burners'], description: "Metal coils that turn red-hot when in use."});
+_kitchen.addObject(_stove);
+_kitchen.addObject(_burner);
+
+//closet furnishings
+let _rack = new basicObject({name: ['rack', 'clothesrack', 'clothes rack'], description:'A wire clothesrack.'}); containerMix(_rack, {allowed: ['jacket', 'shirt']});
+let _jacket = new basicObject({name: ['jacket', 'coat', 'windbreaker', 'arcteryx'], description: "A lightweight red Arcteryx windbreaker.", takeable: true})
+let _shirt = new basicObject({name: ['shirt','t-shirt','tshirt'], description: "A striped T-shirt.", takeable: true})
+_rack.addObject(_shirt);
+_rack.addObject(_jacket);
+_closet.addObject(_rack);
+
+//bathroom furnishings
+let _bathtub = new basicObject({name: ['bathtub','tub','shower'], description: "A white porcelain bathtub with white curtains."}); containerMix(_bathtub, {putIn: true});
+let _curtains = new basicObject({name: ['curtains', 'curtain'], description: "Double layer curtain with a vinyl inside and cotton outside."})
+let _bathsink = new basicObject({name: ['sink'], description: "A white porcelain sink."}); containerMix(_bathsink, {putIn:true});
+let _toilet = new basicObject({name: ['toilet'], description: "A Toto brand toilet. Built to last."}); containerMix(_toilet, {putIn: true});
+
+_bathroom.addObject(_toilet);
+_bathroom.addObject(_bathtub);
+_bathroom.addObject(_bathsink);
+_bathroom.addObject(_curtains);
+
+let pissMix = (function(cmdObj) {
+	cmdObj.commandList['pee'] = function(splitCommands, userCom) {
+	    if (_user.currentRoom == _bathroom) {
+	    	newMessage('You pee in the sink. Gross.');
+	    }
+		else {
+		    newMessage("This is not the appropriate place for that!!!");
+		    return;
+		};
+	};
+	cmdObj.commandList['piss'] = cmdObj.commandList['pee'];
+	cmdObj.commandList['poop'] = function(splitCommands, userCom) {
+	    if (_user.currentRoom == _bathroom) {
+	    	newMessage('You use the toilet and spiral your products to oblivion.');
+	    }
+		else {
+		    newMessage("This is not the appropriate place for that!!!");
+		    return;
+		};
+	};
+	cmdObj.commandList['shit'] = cmdObj.commandList['poop'];
+})(_commandObj);
+
+let _user = new personObj('You', sessionId); containerMix(_user); userMix(_user,{currentRoom: _room});
+_room.addObject(_user)
 
 suppressMessages = false;
-newMessage(_room.look());
+newMessage(_user.currentRoom.look());
