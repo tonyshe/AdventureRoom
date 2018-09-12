@@ -4,7 +4,7 @@ const sessionId = makeUserId();
 //rooms
 let _room = new basicObject({name: ['studio', 'apartment', 'room'], description: "Hardwood floors and white painted walls. Located on the top floor of an apartment building on the corner of Howell and 12th."}); roomMix(_room);
 _room.look = function() {
-    return "Alex's main studio room. There is a bed in the corner, with a nightstand next to it. Along the wall is a brown leather couch. In the middle of the room is a coffee table and a large bean bag chair. There are a few windows on the opposite wall and a small book shelf. Around the corner is the kitchen area. To the other side is the walk-in closet and bathroom."
+    return "Alex's main studio room. There is a bed in the corner, with a nightstand next to it. Along the wall is a brown leather couch. In the middle of the room is a coffee table and a large bean bag chair. There are a few windows on the opposite wall and a small book shelf. Around the corner is the kitchen area. To the other side is the entrance to the walk-in closet and bathroom."
 };
 
 let _kitchen = new basicObject({name: ['kitchen'], description: "A narrow kitchen area with a section that doubles as a small office."}); roomMix(_kitchen);
@@ -14,7 +14,7 @@ _kitchen.look = function() {
 
 let _closet = new basicObject({name: ['closet', 'walk-in', 'walk in', 'walk-in closet', 'walk in closet', 'alcove'], description: "An alcove of the main area meant for clothing and storage."}); roomMix(_closet);
 _closet.look = function() {
-	return "You are in the closet alcove. A few sweaters and jackets hang on a clothesrack. Behind you is the main apartment area.";
+	return "You are in the closet alcove. Suspended from the wall is a clothesrack. Behind you is the main apartment area.";
 }
 
 let _bathroom = new basicObject({name: ['bathroom', 'restroom'], description: "A small bathroom."}); roomMix(_bathroom);
@@ -98,16 +98,6 @@ let readMix = (function(cmdObj) {
 
 let _ukulele = new basicObject({name: ['ukulele', 'uke'], description: "Mahogany with white trim.", takeable: true})
 _ukulele.playable = true
-_bookshelf.addObject(_book);
-_bookshelf.addObject(_ukulele);
-_room.addObject(_bookshelf);
-
-let _aha = new basicObject({name: ['A-ha CD', 'me on', 'on me', 'aha','a-ha', 'cd'], description: 'A hit single by the 80s synthpop band A-ha.', takeable: true});
-_room.addObject(_aha);
-
-let _window = new basicObject({name: ['window', 'windows'], description: "North-facing windows. You can see a glimpse of Cal Anderson park."}); containerMix(_window, {isBox: true, allowed: ['nothing_at_all']});
-_room.addObject(_window);
-
 let playMix = (function(cmdObj) {
 	cmdObj.commandList['play'] = function(splitCommands, userCom) {
 	    if (splitCommands[1]) {
@@ -144,6 +134,15 @@ let playMix = (function(cmdObj) {
 		};
 	};
 })(_commandObj);
+_bookshelf.addObject(_book);
+_bookshelf.addObject(_ukulele);
+_room.addObject(_bookshelf);
+
+let _aha = new basicObject({name: ['A-ha CD', 'me on', 'on me', 'aha','a-ha', 'cd'], description: 'A hit single by the 80s synthpop band A-ha.', takeable: true});
+_room.addObject(_aha);
+
+let _window = new basicObject({name: ['window', 'windows'], description: "North-facing windows. You can see a glimpse of Cal Anderson park."}); containerMix(_window, {isBox: true, allowed: ['nothing_at_all']});
+_room.addObject(_window);
 
 //kitchen furnishings
 let _desk = new basicObject({name: ['desk', 'table'], description: "A large office desk that fits flush with the wall."}); containerMix(_desk);
