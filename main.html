@@ -35,7 +35,7 @@
   </style>
   <div id="messageBox">
   	<div class="message">
-  		<p><b>Welcome to the Alex's Studio Apartment!</b><br>Enter a command or type "help" for a list of commands.<br><hr></p>
+  		<p><b>Welcome to the Interactive Room!</b><br>Enter a command or type "help" for a list of commands.<br><hr></p>
  	</div>
   </div>
 
@@ -46,7 +46,29 @@
 
   </body>
   <script src="https://code.jquery.com/jquery-2.2.4.js" integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=" crossorigin="anonymous"></script>
-  <script src="scripts\main.js"></script>
-  <script src="scripts\populate.js"></script>
-  <script src="scripts\ajaxOverrides.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/scripts/command.js"></script>
+  <script>
+    $(document).ready(function() {
+
+      var socket = io();
+
+      $('#command').submit(function(e){
+        if ($("#userCom").val() == "") {
+          e.preventDefault();
+        }
+        else {
+          socket.emit('user command', $('#userCom').val());
+          e.preventDefault();
+        };
+      $(document).scrollTop($(document).height()); //scroll to bottom
+      $('#command').trigger("reset"); //Resets the text box
+      });
+
+      socket.on('message', function(msg){
+        newMessage(msg);
+      });
+    });
+  </script>
+
 </html>
